@@ -8,6 +8,7 @@
 #include "Sender.h"
 #include "Globals.h"
 #include <PubSubClient.h>
+#include <WiFiClientSecureBearSSL.h>
 
 #define UBISERVER "things.ubidots.com"
 #define CONNTIMEOUT 2000
@@ -164,6 +165,37 @@ bool SenderClass::sendGenericPost(String server, String url, uint16_t port)
     CONSOLELN(F("HTTPAPI: posting"));
     // configure traged server and url
     http.begin(server, port, url);
+
+    (void)_sendPost(http);
+
+    http.end();
+    delay(100); // allow gracefull session close
+    return true;
+}
+
+bool SenderClass::sendHTTPSPost(String server, String url, String fingerprint, uint16_t port)
+{
+    _jsonVariant.printTo(Serial);
+
+    std::unique_ptr<BearSSL::WiFiClientSecure>client(new BearSSL::WiFiClientSecure);
+    client->setFingerprint(fingerprint.c_str());
+    HTTPClient https;
+
+    CONSOLELN(F("HTTPSAPI: posting"));
+    // server, port, url
+    https.begin(*client, server, port, url, true);
+
+    (void)_sendPost(https);
+
+    https.end();
+    delay(100);
+
+    return true;
+}
+
+bool SenderClass::_sendPost(HTTPClient &http)
+{
+    bool ret = false;
     http.addHeader("User-Agent", "iSpindel");
     http.addHeader("Connection", "close");
     http.addHeader("Content-Type", "application/json");
@@ -178,18 +210,17 @@ bool SenderClass::sendGenericPost(String server, String url, uint16_t port)
     {
         if (httpCode == HTTP_CODE_OK)
         {
+            ret = true;
             CONSOLELN(http.getString());
         }
     }
     else
     {
-        CONSOLE(F("[HTTP] POST... failed, error: "));
+        CONSOLE(F("[HTTP(S)] POST... failed, error: "));
         CONSOLELN(http.errorToString(httpCode));
     }
 
-    http.end();
-    delay(100); // allow gracefull session close
-    return true;
+    return ret;
 }
 
 bool SenderClass::sendInfluxDB(String server, uint16_t port, String db, String name, String username, String password)

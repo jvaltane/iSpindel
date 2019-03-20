@@ -19,6 +19,7 @@ public:
   SenderClass();
   String sendTCP(String server, uint16_t port = 80);
   bool sendGenericPost(String server, String url, uint16_t port = 80);
+  bool sendHTTPSPost(String server, String url, String fingerprint, uint16_t port = 443);
   bool sendInfluxDB(String server, uint16_t port, String db, String name, String username, String password);
   bool sendPrometheus(String server, uint16_t port, String job, String instance);
   bool sendUbidots(String token, String name);
@@ -40,6 +41,8 @@ private:
   DynamicJsonBuffer _jsonBuffer;
   // JsonObject data;
   JsonVariant _jsonVariant;
+
+  bool _sendPost(HTTPClient &http);
 };
 
 #endif

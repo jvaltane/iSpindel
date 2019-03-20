@@ -64,6 +64,7 @@ extern Ticker flasher;
 #define OWinterval (760 / (1 << (12 - RESOLUTION)))
 #define CFGFILE "/config.json"
 #define TKIDSIZE 40
+#define SHA1FINGERPRINTSIZE 40
 
 #define MEDIANROUNDSMAX 49
 #define MEDIANROUNDSMIN 29
@@ -83,6 +84,7 @@ extern Ticker flasher;
 #define DTInfluxDB 8
 #define DTPrometheus 9
 #define DTMQTT 10
+#define DTHTTPS 11
 
 // Number of seconds after reset during which a
 // subseqent reset will be considered a double reset.

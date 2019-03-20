@@ -76,6 +76,7 @@ char my_password[TKIDSIZE];
 char my_job[TKIDSIZE] = "ispindel";
 char my_instance[TKIDSIZE] = "000";
 char my_polynominal[100] = "-0.00031*tilt^2+0.557*tilt-14.054";
+char my_fingerprint[SHA1FINGERPRINTSIZE]; // SHA1 fingerprint as string
 
 String my_ssid;
 String my_psk;
@@ -196,6 +197,9 @@ bool readConfig()
             my_psk = (const char *)json["PSK"];
           if (json.containsKey("POLY"))
             strcpy(my_polynominal, json["POLY"]);
+          if (json.containsKey("Fingerprint")) {
+            strcpy(my_fingerprint, json["Fingerprint"]);
+          }
 
           my_aX = UNINIT;
           my_aY = UNINIT;
@@ -352,6 +356,7 @@ bool startConfiguration()
   WiFiManagerParameter custom_tempscale("tempscale", "tempscale",
                                         String(my_tempscale).c_str(),
                                         5, TYPE_HIDDEN, WFM_NO_LABEL);
+  WiFiManagerParameter custom_fingerprint("fingerprint", "Fingerprint", my_fingerprint, SHA1FINGERPRINTSIZE);
 
   wifiManager.addParameter(&custom_name);
   wifiManager.addParameter(&custom_sleep);
@@ -371,6 +376,7 @@ bool startConfiguration()
   wifiManager.addParameter(&custom_server);
   wifiManager.addParameter(&custom_port);
   wifiManager.addParameter(&custom_url);
+  wifiManager.addParameter(&custom_fingerprint);
   wifiManager.addParameter(&custom_db);
   wifiManager.addParameter(&custom_username);
   wifiManager.addParameter(&custom_password);
@@ -392,6 +398,7 @@ bool startConfiguration()
   validateInput(custom_name.getValue(), my_name);
   validateInput(custom_token.getValue(), my_token);
   validateInput(custom_server.getValue(), my_server);
+  validateInput(custom_fingerprint.getValue(), my_fingerprint);
   validateInput(custom_db.getValue(), my_db);
   validateInput(custom_username.getValue(), my_username);
   validateInput(custom_password.getValue(), my_password);
@@ -460,6 +467,7 @@ bool saveConfig()
   json["Vfact"] = my_vfact;
   json["TS"] = my_tempscale;
   json["OWpin"] = my_OWpin;
+  json["Fingerprint"] = my_fingerprint;
 
   // Store current Wifi credentials
   json["SSID"] = WiFi.SSID();
@@ -575,7 +583,7 @@ bool uploadData(uint8_t service)
 #endif
 
 #ifdef API_GENERIC
-  if ((service == DTHTTP) || (service == DTCraftBeerPi) || (service == DTiSPINDELde) || (service == DTTCP))
+  if ((service == DTHTTP) || (service == DTCraftBeerPi) || (service == DTiSPINDELde) || (service == DTTCP) || (service == DTHTTPS))
   {
 
     sender.add("name", my_name);
@@ -610,6 +618,11 @@ bool uploadData(uint8_t service)
       CONSOLELN(F("\ncalling TCP"));
       String response = sender.sendTCP(my_server, my_port);
       return processResponse(response);
+    }
+    if (service == DTHTTPS)
+    {
+      CONSOLELN(F("\ncalling HTTPS"));
+      return sender.sendHTTPSPost(my_server, my_url, my_fingerprint, my_port);
     }
   }
 #endif // DATABASESYSTEM
